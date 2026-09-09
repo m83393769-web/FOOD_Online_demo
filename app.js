@@ -264,7 +264,7 @@ async function submitOrder() {
     items: cart.map(i => ({ id: i.id, quantity: i.quantity, addons: i.addons })),
     total: total,
     payment_method: payment,
-    pickup_time: currentOrderType === 'pickup' ? parseInt(time) : null,
+    pickup_time: currentOrderType === 'pickup' ? parseInt(time) : 0,
     status: 'pending',
     client_id: currentUserId.toString()
   };
@@ -395,7 +395,7 @@ function renderKitchenOrders() {
           <span class="text-xs block text-slate-400 font-semibold">${new Date(o.created_at).toLocaleTimeString().slice(0, 5)}</span>
         </div>
         <span class="text-xs font-black px-2 py-1 bg-slate-100 rounded-lg text-slate-700">
-          ${o.pickup_time ? `🏃‍♂️ Самовывоз (${o.pickup_time} мин)` : `🛵 Доставка`}
+          ${o.pickup_time > 0 ? `🏃‍♂️ Самовывоз (${o.pickup_time} мин)` : `🛵 Доставка`}
         </span>
       </div>
 
