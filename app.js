@@ -42,7 +42,7 @@ function applyBrandSettings() {
   renderOrderTypeButtons();
 }
 
-// 3. Рендер плашек категорий
+// 3. Категории
 function renderCategories() {
   const container = document.getElementById('categories-bar');
   if (!CONFIG.categories || CONFIG.categories.length === 0) {
@@ -64,7 +64,7 @@ function setCategory(cat) {
   renderMenu();
 }
 
-// 4. Кнопки «Доставка / Самовывоз»
+// 4. Тип заказа (Самовывоз / Доставка)
 function renderOrderTypeButtons() {
   const container = document.getElementById('order-type-buttons');
   let html = '';
@@ -124,17 +124,15 @@ async function loadData() {
   }
 }
 
-// 6. Рендер каталога блюд
+// 6. Рендер блюд
 function renderMenu() {
   const container = document.getElementById('menu-container');
-  
-  // Фильтрация по категории (если у блюд в базе есть колонка category)
   const filtered = activeCategory === "Все" 
     ? menuItems 
     : menuItems.filter(i => (i.category || '').toLowerCase() === activeCategory.toLowerCase());
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 py-10">В этой категории пока ничего нет</p>`;
+    container.innerHTML = `<p class="text-center text-slate-400 py-10">В этой категории пока пусто</p>`;
     return;
   }
 
@@ -234,13 +232,27 @@ function renderCart() {
   }).join('');
 }
 
-// 8. Оформление заказа
+// 8. УМНАЯ ПОРЯДКОВАЯ НУМЕРАЦИЯ ЗАКАЗОВ (БЕЗ ДУБЛИКАТОВ)
+async function getNextOrderNumber() {
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = await supabaseClient
+    .from('orders')
+    .select('order_number')
+    .gte('created_at', `${today}T00:00:00`)
+    .lte('created_at', `${today}T23:59:59`);
+
+  if (!data || data.length === 0) return 1;
+  const numbers = data.map(o => o.order_number || 0);
+  return Math.max(...numbers) + 1;
+}
+
+// 9. Оформление заказа
 async function submitOrder() {
   if (cart.length === 0) return;
 
   const phone = document.getElementById('order-phone').value.trim();
   const address = document.getElementById('order-address').value.trim();
-  const time = document.getElementById('order-time').value;
+  const time = document.getElementById('order-time')?.value || "20";
   const payment = document.getElementById('order-payment').value;
 
   if (!phone) {
@@ -256,20 +268,22 @@ async function submitOrder() {
   btn.innerText = 'Отправка...';
   btn.disabled = true;
 
-  const orderNumber = Math.floor(100 + Math.random() * 900);
-  const total = getCartTotal();
-
-  const orderPayload = {
-    order_number: orderNumber,
-    items: cart.map(i => ({ id: i.id, quantity: i.quantity, addons: i.addons })),
-    total: total,
-    payment_method: payment,
-    pickup_time: currentOrderType === 'pickup' ? parseInt(time) : 0,
-    status: 'pending',
-    client_id: currentUserId.toString()
-  };
-
   try {
+    const orderNumber = await getNextOrderNumber();
+    const total = getCartTotal();
+
+    const orderPayload = {
+      order_number: orderNumber,
+      items: cart.map(i => ({ id: i.id, quantity: i.quantity, addons: i.addons })),
+      total: total,
+      payment_method: payment,
+      pickup_time: currentOrderType === 'pickup' ? (parseInt(time) || 20) : null,
+      phone: phone,
+      address: currentOrderType === 'delivery' ? address : null,
+      status: 'pending',
+      client_id: currentUserId.toString()
+    };
+
     const { error } = await supabaseClient.from('orders').insert([orderPayload]);
     if (error) throw error;
 
@@ -279,8 +293,8 @@ async function submitOrder() {
     switchTab('orders');
     await loadOrders();
 
-    // Уведомление владельцу в Telegram
-    const typeTitle = currentOrderType === 'delivery' ? `🛵 Доставка (${address})` : `🏃‍♂️ Самовывоз (${time} мин)`;
+    // Уведомление в Telegram
+    const typeTitle = currentOrderType === 'delivery' ? `🛵 Доставка: ${address}` : `🏃‍♂️ Самовывоз (${time} мин)`;
     CONFIG.adminIds.forEach(adminId => {
       sendTelegramMessage(adminId, 
         `🔔 *НОВЫЙ ЗАКАЗ #${orderNumber}!* \n` +
@@ -298,7 +312,7 @@ async function submitOrder() {
   }
 }
 
-// 9. Вспомогательная функция сборки состава заказа
+// 10. Вспомогательный рендер состава блюд
 function buildOrderItemsHtml(items) {
   if (!items || !Array.isArray(items)) return '—';
 
@@ -324,12 +338,14 @@ function buildOrderItemsHtml(items) {
   }).join('');
 }
 
-// 10. Загрузка и показ заказов
+// 11. Загрузка заказов
 async function loadOrders() {
+  // Клиент видит ТОЛЬКО АКТИВНЫЕ заказы (завершенные скрываются!)
   const { data: clientOrders } = await supabaseClient
     .from('orders')
     .select('*')
     .eq('client_id', currentUserId.toString())
+    .neq('status', 'completed')
     .order('created_at', { ascending: false });
   myOrders = clientOrders || [];
   renderClientOrders();
@@ -345,18 +361,24 @@ async function loadOrders() {
   }
 }
 
+// 12. Экран «Мои заказы» у гостя (чистый, только активные)
 function renderClientOrders() {
   const container = document.getElementById('my-orders-list');
   if (myOrders.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 py-10">Активных заказов нет</p>`;
+    container.innerHTML = `
+      <div class="text-center py-16 text-slate-400">
+        <span class="text-4xl block mb-2">🌯</span>
+        <p class="font-semibold text-sm">Сейчас у вас нет активных заказов</p>
+        <p class="text-xs text-slate-400 mt-1">Закажите что-нибудь вкусное во вкладке «Меню»!</p>
+      </div>
+    `;
     return;
   }
 
   container.innerHTML = myOrders.map(o => {
     let badge = '<span class="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold">⏳ Ожидает</span>';
     if (o.status === 'preparing') badge = '<span class="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">🔥 Готовится</span>';
-    if (o.status === 'ready') badge = '<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold">✅ Готов!</span>';
-    if (o.status === 'completed') badge = '<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-xs font-bold">📦 Выдан</span>';
+    if (o.status === 'ready') badge = '<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold">✅ Готов к выдаче!</span>';
 
     return `
       <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-2">
@@ -368,7 +390,7 @@ function renderClientOrders() {
           ${buildOrderItemsHtml(o.items)}
         </div>
         <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-          <span class="text-xs text-slate-400 font-medium">${o.payment_method}</span>
+          <span class="text-xs text-slate-400 font-medium">${o.address ? '🛵 Доставка' : `🏃‍♂️ Через ${o.pickup_time} мин`}</span>
           <span class="text-sm font-black text-slate-900">${o.total} ${CONFIG.currency}</span>
         </div>
       </div>
@@ -376,7 +398,7 @@ function renderClientOrders() {
   }).join('');
 }
 
-// 11. КУХНЯ С ПОЛНЫМ СОСТАВОМ И СВЯЗЬЮ С КЛИЕНТОМ
+// 13. Экран КУХНИ (С АДРЕСОМ, ТЕЛЕФОНОМ И СОСТАВОМ)
 function renderKitchenOrders() {
   const container = document.getElementById('kitchen-orders-list');
   const active = allOrders.filter(o => o.status !== 'completed');
@@ -389,22 +411,30 @@ function renderKitchenOrders() {
 
   container.innerHTML = active.map(o => `
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+      
+      <!-- Шапка чека -->
       <div class="flex justify-between items-center border-b pb-2">
         <div>
           <span class="font-black text-base text-slate-900">Чек #${o.order_number}</span>
           <span class="text-xs block text-slate-400 font-semibold">${new Date(o.created_at).toLocaleTimeString().slice(0, 5)}</span>
         </div>
-        <span class="text-xs font-black px-2 py-1 bg-slate-100 rounded-lg text-slate-700">
-          ${o.pickup_time > 0 ? `🏃‍♂️ Самовывоз (${o.pickup_time} мин)` : `🛵 Доставка`}
+        <span class="text-xs font-black px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700">
+          ${o.address ? '🛵 ДОСТАВКА' : `🏃‍♂️ САМОВЫВОЗ (${o.pickup_time || 20} мин)`}
         </span>
       </div>
 
-      <!-- ПОЛНЫЙ СОСТАВ БЛЮД ДЛЯ ПОВАРА -->
+      <!-- Контакты и адрес доставки -->
+      <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100 text-xs space-y-1">
+        ${o.phone ? `<div>📞 Тел: <a href="tel:${o.phone}" class="font-bold text-amber-900 underline">${o.phone}</a></div>` : ''}
+        ${o.address ? `<div class="font-semibold text-slate-800">📍 Адрес: <span class="font-bold text-slate-900">${o.address}</span></div>` : ''}
+      </div>
+
+      <!-- Полный состав блюд для повара -->
       <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-800 divide-y divide-slate-200/60">
         ${buildOrderItemsHtml(o.items)}
       </div>
 
-      <!-- Кнопки статусов -->
+      <!-- Кнопки управления статусом -->
       <div class="grid grid-cols-3 gap-1.5">
         <button type="button" onclick="setOrderStatus(${o.id}, 'pending')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}">⏳ Ждет</button>
         <button type="button" onclick="setOrderStatus(${o.id}, 'preparing')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'preparing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200'}">🔥 Готовить</button>
@@ -412,7 +442,7 @@ function renderKitchenOrders() {
       </div>
 
       <button type="button" onclick="setOrderStatus(${o.id}, 'completed')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all">
-        💰 Выдан и оплачен (${o.total} ${CONFIG.currency})
+        💰 ИСПОЛНЕНО (Заказ выдан · ${o.total} ${CONFIG.currency})
       </button>
     </div>
   `).join('');
@@ -425,13 +455,12 @@ async function setOrderStatus(orderId, newStatus) {
   await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
   await loadOrders();
 
-  // Пуш клиенту в Telegram, когда заказ готов
   if (newStatus === 'ready' && order?.client_id) {
-    sendTelegramMessage(order.client_id, `🎉 *Ваш заказ #${order.order_number} ГОТОВ!* Забирайте на выдаче.`);
+    sendTelegramMessage(order.client_id, `🎉 *Ваш заказ #${order.order_number} ГОТОВ!* Забирайте.`);
   }
 }
 
-// 12. Касса для босса
+// 14. Касса
 function renderAdminStats() {
   const today = new Date().toDateString();
   const todayOrders = allOrders.filter(o => new Date(o.created_at).toDateString() === today);
@@ -448,7 +477,7 @@ function renderAdminStats() {
   `).join('');
 }
 
-// 13. Realtime
+// 15. Realtime
 function initRealtime() {
   supabaseClient
     .channel('orders-realtime')
@@ -458,7 +487,7 @@ function initRealtime() {
     .subscribe();
 }
 
-// 14. Навигация
+// 16. Навигация
 function switchTab(tab) {
   haptic();
   ['menu', 'orders', 'kitchen', 'admin'].forEach(t => {
@@ -472,7 +501,7 @@ function switchTab(tab) {
   document.getElementById(`nav-btn-${tab}`).classList.replace('text-slate-400', 'text-slate-900');
 }
 
-// Отправка сообщений в Telegram API
+// Telegram Bot API
 async function sendTelegramMessage(chatId, text) {
   try {
     await fetch(`https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`, {
@@ -483,7 +512,7 @@ async function sendTelegramMessage(chatId, text) {
   } catch(e){}
 }
 
-// СТАРТ СИСТЕМЫ
+// СТАРТ
 applyBrandSettings();
 loadData();
 initRealtime();
