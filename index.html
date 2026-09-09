@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Food Delivery TMA</title>
+
+  <!-- Telegram SDK, Tailwind CSS, Supabase -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Конфиг и подключение -->
+  <script src="config.js"></script>
+  <script src="supabase.js"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    body {
+      background-color: var(--tg-theme-bg-color, #f8fafc);
+      color: var(--tg-theme-text-color, #0f172a);
+    }
+    /* Скрываем скроллбар у категорий для красоты */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="pb-24 antialiased selection:bg-none">
+
+  <!-- Шапка -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-3 shadow-sm flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl" id="brand-logo">
+        🥙
+      </div>
+      <div>
+        <h1 class="text-base font-black tracking-tight text-slate-900 leading-tight" id="brand-name">ЗАВЕДЕНИЕ</h1>
+        <p class="text-xs text-slate-500 font-medium" id="brand-subtitle">Заказ еды</p>
+      </div>
+    </div>
+    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-1">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Открыто
+    </span>
+  </header>
+
+  <main class="p-4 max-w-lg mx-auto">
+    
+    <!-- 1. ВКЛАДКА: МЕНЮ -->
+    <section id="tab-menu" class="space-y-4">
+      
+      <!-- Горизонтальные категории -->
+      <div id="categories-bar" class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <!-- Категории рендерятся из JS -->
+      </div>
+
+      <!-- Список блюд -->
+      <div id="menu-container" class="space-y-3">
+        <p class="text-center text-sm text-slate-400 py-10">Загрузка меню...</p>
+      </div>
+
+      <!-- Блок Корзины -->
+      <div id="cart-drawer" class="hidden bg-white border border-slate-200 rounded-3xl p-5 shadow-xl space-y-4 mt-6">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-extrabold text-base text-slate-900">🛒 Ваш заказ</h3>
+          <button type="button" onclick="clearCart()" class="text-xs text-rose-500 font-bold">Очистить</button>
+        </div>
+        
+        <!-- Список товаров в корзине -->
+        <div id="cart-items" class="space-y-3"></div>
+
+        <!-- Оформление -->
+        <div class="border-t pt-3 space-y-3">
+          
+          <!-- Выбор: Доставка или Самовывоз -->
+          <div id="order-type-selector">
+            <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Тип получения</label>
+            <div class="grid grid-cols-2 gap-2" id="order-type-buttons">
+              <!-- Кнопки вставляются из JS по настройкам config.js -->
+            </div>
+          </div>
+
+          <!-- Телефон (ОБЯЗАТЕЛЬНО) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Телефон для связи</label>
+            <input type="tel" id="order-phone" placeholder="+375 / +7 (___) ___-__-__" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-900">
+          </div>
+
+          <!-- Адрес доставки (показывается только если выбрана Доставка) -->
+          <div id="address-block" class="hidden">
+            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Адрес доставки</label>
+            <input type="text" id="order-address" placeholder="Улица, дом, квартира / офис" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-slate-900">
+          </div>
+
+          <!-- Время самовывоза (показывается только если Самовывоз) -->
+          <div id="pickup-time-block">
+            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Когда заберете?</label>
+            <select id="order-time" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800">
+              <option value="15">Через 15 минут</option>
+              <option value="20" selected>Через 20 минут</option>
+              <option value="30">Через 30 минут</option>
+              <option value="45">Через 45 минут</option>
+            </select>
+          </div>
+
+          <!-- Способ оплаты -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Способ оплаты</label>
+            <select id="order-payment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800">
+              <option value="Наличные">Наличными при получении</option>
+              <option value="Карта">Картой при получении</option>
+            </select>
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <span class="text-sm font-bold text-slate-600">К оплате:</span>
+            <span class="text-xl font-black text-slate-900" id="cart-total-price">0</span>
+          </div>
+
+          <button type="button" id="submit-order-btn" onclick="submitOrder()" class="w-full bg-slate-900 text-white font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition-transform">
+            Оформить заказ
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ВКЛАДКА: МОИ ЗАКАЗЫ (ТРЕКИНГ ГОСТЯ) -->
+    <section id="tab-orders" class="hidden space-y-3">
+      <h2 class="text-lg font-black text-slate-900 mb-3">Мои заказы</h2>
+      <div id="my-orders-list" class="space-y-3"></div>
+    </section>
+
+    <!-- 3. ВКЛАДКА: КУХНЯ (KDS С ПОЛНЫМ СОСТАВОМ) -->
+    <section id="tab-kitchen" class="hidden space-y-4">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-lg font-black text-slate-900">👨‍🍳 Экран кухни</h2>
+        <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-lg" id="active-orders-count">0 активных</span>
+      </div>
+      <div id="kitchen-orders-list" class="space-y-3"></div>
+    </section>
+
+    <!-- 4. ВКЛАДКА: КАССА И АНАЛИТИКА -->
+    <section id="tab-admin" class="hidden space-y-4">
+      <h2 class="text-lg font-black text-slate-900">📊 Касса за сегодня</h2>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400">Выручка сегодня</p>
+          <p class="text-2xl font-black text-emerald-600 mt-1" id="stat-revenue">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p class="text-xs font-semibold text-slate-400">Заказов сегодня</p>
+          <p class="text-2xl font-black text-slate-900 mt-1" id="stat-count">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
+        <h3 class="font-bold text-sm text-slate-800">📋 Последние чеки</h3>
+        <div id="admin-recent-orders" class="space-y-2 text-xs"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Нижний умный навбар -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-around items-center max-w-lg mx-auto">
+    <button type="button" onclick="switchTab('menu')" id="nav-btn-menu" class="flex flex-col items-center py-1 text-slate-900 font-bold text-xs">
+      <span class="text-xl">🥙</span>
+      <span>Меню</span>
+    </button>
+    <button type="button" onclick="switchTab('orders')" id="nav-btn-orders" class="flex flex-col items-center py-1 text-slate-400 font-semibold text-xs">
+      <span class="text-xl">📦</span>
+      <span>Заказы</span>
+    </button>
+    <button type="button" onclick="switchTab('kitchen')" id="nav-btn-kitchen" class="hidden flex flex-col items-center py-1 text-amber-600 font-semibold text-xs">
+      <span class="text-xl">👨‍🍳</span>
+      <span>Кухня</span>
+    </button>
+    <button type="button" onclick="switchTab('admin')" id="nav-btn-admin" class="hidden flex flex-col items-center py-1 text-blue-600 font-semibold text-xs">
+      <span class="text-xl">📊</span>
+      <span>Касса</span>
+    </button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
