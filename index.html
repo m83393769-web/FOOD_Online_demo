@@ -14,11 +14,43 @@
 
   <style>
     * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    /* Уютный фон сырного лаваша */
+    
+    /* 🧀 ГЛОБАЛЬНАЯ СЫРНАЯ ТЕМА */
     body {
-      background-color: #F6EFE5;
-      color: #2D1A12;
+      background-color: #F5EEE2 !important; /* Теплый матовый лаваш */
+      color: #2B1810 !important;
     }
+    
+    /* Превращаем все белые карточки в теплый сырный крем */
+    .bg-white, #cart-drawer, header, nav {
+      background-color: #FFFDF9 !important;
+      border-color: #EADBC8 !important;
+    }
+    
+    /* Внутренние плашки (поля ввода, добавки) */
+    .bg-slate-50, input, select {
+      background-color: #FAF3E8 !important;
+      border-color: #E2D3BE !important;
+      color: #2B1810 !important;
+    }
+    
+    /* Кнопки "+ В корзину" и бейджи */
+    .bg-slate-100 {
+      background-color: #F1E3CF !important;
+      color: #3D2216 !important;
+    }
+    
+    /* Главные черные кнопки -> цвет поджаренной корочки */
+    .bg-slate-900, #submit-order-btn {
+      background-color: #2E1A11 !important;
+      color: #FFF8EE !important;
+    }
+    
+    /* Все серые границы делаем теплыми */
+    .border-slate-100, .border-slate-200 {
+      border-color: #EADBC8 !important;
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
