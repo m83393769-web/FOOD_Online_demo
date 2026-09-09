@@ -1,5 +1,5 @@
 // =======================================================
-// УНИВЕРСАЛЬНЫЙ ДВИЖОК: КОРЗИНА, КУХНЯ, КАТЕГОРИИ, REALTIME
+// ДВИЖОК: ГРАФИК РАБОТЫ, КОРЗИНА, КУХНЯ, REALTIME
 // =======================================================
 
 const tg = window.Telegram?.WebApp;
@@ -12,7 +12,7 @@ const haptic = () => {
   try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e){}
 };
 
-// 1. Определение пользователя и роли
+// 1. Определение пользователя
 const currentUserId = tg?.initDataUnsafe?.user?.id || CONFIG.adminIds[0];
 const adminList = (CONFIG.adminIds || []).map(String);
 const staffList = (CONFIG.staffIds || []).map(String);
@@ -29,11 +29,56 @@ let allOrders = [];
 let activeCategory = "Все";
 let currentOrderType = CONFIG.hasPickup ? 'pickup' : 'delivery';
 
-// 2. Применение настроек бренда
+// 2. ПРОВЕРКА ГРАФИКА РАБОТЫ В РЕАЛЬНОМ ВРЕМЕНИ
+function checkWorkingStatus() {
+  // Аварийная заглушка из конфига
+  if (CONFIG.isEmergencyClosed) {
+    return { isOpen: false, reason: CONFIG.emergencyMessage };
+  }
+
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentHour = now.getHours();
+
+  // Проверка дня недели
+  if (!CONFIG.workDays.includes(currentDay)) {
+    return { isOpen: false, reason: `Сегодня выходной день. График: ${CONFIG.workingHoursText}` };
+  }
+
+  // Проверка часов
+  if (currentHour < CONFIG.workStartHour || currentHour >= CONFIG.workEndHour) {
+    return { 
+      isOpen: false, 
+      reason: `Сейчас закрыто. Принимаем заказы с ${CONFIG.workStartHour}:00 до ${CONFIG.workEndHour}:00` 
+    };
+  }
+
+  return { isOpen: true, reason: "Открыто" };
+}
+
+// 3. Применение настроек бренда и статуса открытия
 function applyBrandSettings() {
   document.getElementById('brand-name').innerText = CONFIG.brandName;
   document.getElementById('brand-subtitle').innerText = CONFIG.brandSubtitle;
-  document.getElementById('brand-logo').innerText = CONFIG.brandLogo;
+
+  // Умный логотип (папка images или запасной эмодзи)
+  const logoContainer = document.getElementById('brand-logo');
+  if (CONFIG.brandLogoImg && CONFIG.brandLogoImg.trim() !== "") {
+    logoContainer.innerHTML = `<img src="${CONFIG.brandLogoImg}" class="w-full h-full object-cover rounded-2xl" onerror="this.parentElement.innerHTML='${CONFIG.brandLogoEmoji}'">`;
+  } else {
+    logoContainer.innerText = CONFIG.brandLogoEmoji;
+  }
+
+  // Обновление индикатора «Открыто / Закрыто» в шапке
+  const status = checkWorkingStatus();
+  const badge = document.getElementById('status-badge');
+  if (status.isOpen) {
+    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-1";
+    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Открыто`;
+  } else {
+    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 flex items-center gap-1";
+    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Закрыто`;
+  }
 
   if (isStaff) document.getElementById('nav-btn-kitchen').classList.remove('hidden');
   if (isAdmin) document.getElementById('nav-btn-admin').classList.remove('hidden');
@@ -42,7 +87,7 @@ function applyBrandSettings() {
   renderOrderTypeButtons();
 }
 
-// 3. Категории
+// 4. Категории
 function renderCategories() {
   const container = document.getElementById('categories-bar');
   if (!CONFIG.categories || CONFIG.categories.length === 0) {
@@ -64,7 +109,7 @@ function setCategory(cat) {
   renderMenu();
 }
 
-// 4. Тип заказа (Самовывоз / Доставка)
+// 5. Доставка / Самовывоз
 function renderOrderTypeButtons() {
   const container = document.getElementById('order-type-buttons');
   let html = '';
@@ -108,7 +153,7 @@ function updateOrderTypeUI() {
   }
 }
 
-// 5. Загрузка данных
+// 6. Загрузка данных
 async function loadData() {
   try {
     const { data: menu } = await supabaseClient.from('menu').select('*').eq('is_available', true);
@@ -124,7 +169,7 @@ async function loadData() {
   }
 }
 
-// 6. Рендер блюд
+// 7. Рендер меню
 function renderMenu() {
   const container = document.getElementById('menu-container');
   const filtered = activeCategory === "Все" 
@@ -138,7 +183,7 @@ function renderMenu() {
 
   container.innerHTML = filtered.map(item => `
     <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex gap-3 items-center">
-      <img src="${item.image_url || 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=300'}" class="w-20 h-20 rounded-xl object-cover bg-slate-50 flex-shrink-0">
+      <img src="${item.image_url || 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=300'}" class="w-20 h-20 rounded-xl object-cover bg-slate-50 flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=300'">
       <div class="flex-grow min-w-0">
         <h4 class="font-extrabold text-sm text-slate-900 truncate">${item.name}</h4>
         <p class="text-xs text-slate-400 line-clamp-1 mt-0.5">${item.description || ''}</p>
@@ -151,7 +196,7 @@ function renderMenu() {
   `).join('');
 }
 
-// 7. Корзина
+// 8. Корзина
 function addToCart(itemId) {
   haptic();
   cart.push({ id: itemId, quantity: 1, addons: [] });
@@ -232,7 +277,7 @@ function renderCart() {
   }).join('');
 }
 
-// 8. УМНАЯ ПОРЯДКОВАЯ НУМЕРАЦИЯ ЗАКАЗОВ (БЕЗ ДУБЛИКАТОВ)
+// 9. Номер заказа
 async function getNextOrderNumber() {
   const today = new Date().toISOString().split('T')[0];
   const { data } = await supabaseClient
@@ -246,9 +291,16 @@ async function getNextOrderNumber() {
   return Math.max(...numbers) + 1;
 }
 
-// 9. Оформление заказа
+// 10. ОФОРМЛЕНИЕ ЗАКАЗА С ПРОВЕРКОЙ ВРЕМЕНИ
 async function submitOrder() {
   if (cart.length === 0) return;
+
+  // ЖЕСТКИЙ КОНТРОЛЬ ГРАФИКА
+  const status = checkWorkingStatus();
+  if (!status.isOpen) {
+    alert(`⛔️ Внимание!\n${status.reason}`);
+    return;
+  }
 
   const phone = document.getElementById('order-phone').value.trim();
   const address = document.getElementById('order-address').value.trim();
@@ -293,7 +345,6 @@ async function submitOrder() {
     switchTab('orders');
     await loadOrders();
 
-    // Уведомление в Telegram
     const typeTitle = currentOrderType === 'delivery' ? `🛵 Доставка: ${address}` : `🏃‍♂️ Самовывоз (${time} мин)`;
     CONFIG.adminIds.forEach(adminId => {
       sendTelegramMessage(adminId, 
@@ -312,7 +363,7 @@ async function submitOrder() {
   }
 }
 
-// 10. Вспомогательный рендер состава блюд
+// 11. Вспомогательный вывод состава
 function buildOrderItemsHtml(items) {
   if (!items || !Array.isArray(items)) return '—';
 
@@ -338,9 +389,8 @@ function buildOrderItemsHtml(items) {
   }).join('');
 }
 
-// 11. Загрузка заказов
+// 12. Заказы
 async function loadOrders() {
-  // Клиент видит ТОЛЬКО АКТИВНЫЕ заказы (завершенные скрываются!)
   const { data: clientOrders } = await supabaseClient
     .from('orders')
     .select('*')
@@ -361,7 +411,6 @@ async function loadOrders() {
   }
 }
 
-// 12. Экран «Мои заказы» у гостя (чистый, только активные)
 function renderClientOrders() {
   const container = document.getElementById('my-orders-list');
   if (myOrders.length === 0) {
@@ -398,7 +447,7 @@ function renderClientOrders() {
   }).join('');
 }
 
-// 13. Экран КУХНИ (С АДРЕСОМ, ТЕЛЕФОНОМ И СОСТАВОМ)
+// 13. Кухня
 function renderKitchenOrders() {
   const container = document.getElementById('kitchen-orders-list');
   const active = allOrders.filter(o => o.status !== 'completed');
@@ -411,8 +460,6 @@ function renderKitchenOrders() {
 
   container.innerHTML = active.map(o => `
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-      
-      <!-- Шапка чека -->
       <div class="flex justify-between items-center border-b pb-2">
         <div>
           <span class="font-black text-base text-slate-900">Чек #${o.order_number}</span>
@@ -423,18 +470,15 @@ function renderKitchenOrders() {
         </span>
       </div>
 
-      <!-- Контакты и адрес доставки -->
       <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100 text-xs space-y-1">
         ${o.phone ? `<div>📞 Тел: <a href="tel:${o.phone}" class="font-bold text-amber-900 underline">${o.phone}</a></div>` : ''}
         ${o.address ? `<div class="font-semibold text-slate-800">📍 Адрес: <span class="font-bold text-slate-900">${o.address}</span></div>` : ''}
       </div>
 
-      <!-- Полный состав блюд для повара -->
       <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-800 divide-y divide-slate-200/60">
         ${buildOrderItemsHtml(o.items)}
       </div>
 
-      <!-- Кнопки управления статусом -->
       <div class="grid grid-cols-3 gap-1.5">
         <button type="button" onclick="setOrderStatus(${o.id}, 'pending')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}">⏳ Ждет</button>
         <button type="button" onclick="setOrderStatus(${o.id}, 'preparing')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'preparing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200'}">🔥 Готовить</button>
@@ -501,7 +545,7 @@ function switchTab(tab) {
   document.getElementById(`nav-btn-${tab}`).classList.replace('text-slate-400', 'text-slate-900');
 }
 
-// Telegram Bot API
+// Telegram
 async function sendTelegramMessage(chatId, text) {
   try {
     await fetch(`https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`, {
