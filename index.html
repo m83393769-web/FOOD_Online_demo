@@ -7,6 +7,27 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Подменяем белый и сланцевый прямо в ядре стилей!
+            white: '#FFF6DC',      // Нежный расплавленный сыр сулугуни
+            slate: {
+              50: '#FAF0CC',       // Маслянистые плашки инпутов
+              100: '#F3CA68',      // Яркий сыр Чеддер (кнопки добавления)
+              200: '#E2BF6F',      // Золотистые рамки лаваша
+              400: '#8A6E55',      // Теплый второстепенный текст
+              500: '#6B4F38',
+              800: '#381E0D',      // Глубокий кофейный цвет текста
+              900: '#3B1B09',      // Цвет поджаренной корочки на гриле
+            }
+          }
+        }
+      }
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="config.js?v=cheese"></script>
@@ -17,13 +38,13 @@
     
     /* 🧀 НАСТОЯЩИЙ СЫРНЫЙ ЛАВАШ (Желтый, теплый, матовый) */
     body {
-      background-color: #F8E5B9 !important; /* Цвет сочного сырного лаваша */
+      background-color: #ffc53f !important; /* Цвет сочного сырного лаваша */
       color: #381E0D !important;
     }
     
     /* Карточки блюд: нежный расплавленный сыр сулугуни */
     .bg-white, #cart-drawer, header, nav {
-      background-color: #FFF6DB !important;
+      background-color: #a28429 !important;
       border-color: #E2BF6F !important;
       box-shadow: 0 4px 12px rgba(180, 115, 20, 0.08) !important;
     }
@@ -56,7 +77,7 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="pb-24 antialiased selection:bg-none">
+<body style="background-color: #F6E2B3 !important;" class="pb-24 antialiased selection:bg-none">
 
   <!-- Шапка в цвете топленого сыра -->
   <header class="sticky top-0 z-30 bg-[#FFFDF9]/95 backdrop-blur-md border-b border-[#E8DCCB] px-4 py-3 shadow-sm flex items-center justify-between">
