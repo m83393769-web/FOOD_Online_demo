@@ -6,6 +6,11 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
+  // Блокируем цвета Телеграма под наш цвет
+  try {
+    tg.setHeaderColor('#FFF6DC');
+    tg.setBackgroundColor('#F6E2B3');
+  } catch(e){}
 }
 
 const haptic = () => {
@@ -29,9 +34,8 @@ let allOrders = [];
 let activeCategory = "Все";
 let currentOrderType = CONFIG.hasPickup ? 'pickup' : 'delivery';
 
-// 2. ПРОВЕРКА ГРАФИКА РАБОТЫ В РЕАЛЬНОМ ВРЕМЕНИ
+// 2. Проверка графика работы
 function checkWorkingStatus() {
-  // Аварийная заглушка из конфига
   if (CONFIG.isEmergencyClosed) {
     return { isOpen: false, reason: CONFIG.emergencyMessage };
   }
@@ -40,12 +44,10 @@ function checkWorkingStatus() {
   const currentDay = now.getDay();
   const currentHour = now.getHours();
 
-  // Проверка дня недели
   if (!CONFIG.workDays.includes(currentDay)) {
     return { isOpen: false, reason: `Сегодня выходной день. График: ${CONFIG.workingHoursText}` };
   }
 
-  // Проверка часов
   if (currentHour < CONFIG.workStartHour || currentHour >= CONFIG.workEndHour) {
     return { 
       isOpen: false, 
@@ -56,12 +58,11 @@ function checkWorkingStatus() {
   return { isOpen: true, reason: "Открыто" };
 }
 
-// 3. Применение настроек бренда и статуса открытия
+// 3. Применение настроек бренда
 function applyBrandSettings() {
   document.getElementById('brand-name').innerText = CONFIG.brandName;
   document.getElementById('brand-subtitle').innerText = CONFIG.brandSubtitle;
 
-  // Умный логотип (папка images или запасной эмодзи)
   const logoContainer = document.getElementById('brand-logo');
   if (CONFIG.brandLogoImg && CONFIG.brandLogoImg.trim() !== "") {
     logoContainer.innerHTML = `<img src="${CONFIG.brandLogoImg}" class="w-full h-full object-cover rounded-2xl" onerror="this.parentElement.innerHTML='${CONFIG.brandLogoEmoji}'">`;
@@ -69,15 +70,14 @@ function applyBrandSettings() {
     logoContainer.innerText = CONFIG.brandLogoEmoji;
   }
 
-  // Обновление индикатора «Открыто / Закрыто» в шапке
   const status = checkWorkingStatus();
   const badge = document.getElementById('status-badge');
   if (status.isOpen) {
-    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-1";
-    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Открыто`;
+    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1";
+    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Открыто`;
   } else {
-    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 flex items-center gap-1";
-    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Закрыто`;
+    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1";
+    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Закрыто`;
   }
 
   if (isStaff) document.getElementById('nav-btn-kitchen').classList.remove('hidden');
@@ -96,7 +96,7 @@ function renderCategories() {
   }
 
   container.innerHTML = CONFIG.categories.map(cat => `
-    <button type="button" onclick="setCategory('${cat}')" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}">
+    <button type="button" onclick="setCategory('${cat}')" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-800 border border-slate-200'}">
       ${cat}
     </button>
   `).join('');
@@ -116,14 +116,14 @@ function renderOrderTypeButtons() {
 
   if (CONFIG.hasPickup) {
     html += `
-      <button type="button" id="btn-type-pickup" onclick="setOrderType('pickup')" class="py-2.5 text-xs font-bold rounded-xl border transition-all ${currentOrderType === 'pickup' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200'}">
+      <button type="button" id="btn-type-pickup" onclick="setOrderType('pickup')" class="py-2.5 text-xs font-bold rounded-xl border transition-all ${currentOrderType === 'pickup' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-800 border-slate-200'}">
         🏃‍♂️ Самовывоз
       </button>
     `;
   }
   if (CONFIG.hasDelivery) {
     html += `
-      <button type="button" id="btn-type-delivery" onclick="setOrderType('delivery')" class="py-2.5 text-xs font-bold rounded-xl border transition-all ${currentOrderType === 'delivery' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200'}">
+      <button type="button" id="btn-type-delivery" onclick="setOrderType('delivery')" class="py-2.5 text-xs font-bold rounded-xl border transition-all ${currentOrderType === 'delivery' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-800 border-slate-200'}">
         🛵 Доставка
       </button>
     `;
@@ -169,7 +169,7 @@ async function loadData() {
   }
 }
 
-// 7. Рендер меню
+// 7. Рендер блюд
 function renderMenu() {
   const container = document.getElementById('menu-container');
   const filtered = activeCategory === "Все" 
@@ -177,19 +177,19 @@ function renderMenu() {
     : menuItems.filter(i => (i.category || '').toLowerCase() === activeCategory.toLowerCase());
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 py-10">В этой категории пока пусто</p>`;
+    container.innerHTML = `<p class="text-center text-slate-500 py-10">В этой категории пока пусто</p>`;
     return;
   }
 
   container.innerHTML = filtered.map(item => `
-    <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex gap-3 items-center">
+    <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm flex gap-3 items-center">
       <img src="${item.image_url || 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=300'}" class="w-20 h-20 rounded-xl object-cover bg-slate-50 flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=300'">
       <div class="flex-grow min-w-0">
         <h4 class="font-extrabold text-sm text-slate-900 truncate">${item.name}</h4>
-        <p class="text-xs text-slate-400 line-clamp-1 mt-0.5">${item.description || ''}</p>
+        <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">${item.description || ''}</p>
         <p class="text-sm font-black text-slate-900 mt-1">${item.price} ${CONFIG.currency}</p>
       </div>
-      <button type="button" onclick="addToCart(${item.id})" class="bg-slate-100 active:scale-90 text-slate-900 font-extrabold px-3.5 py-2 rounded-xl text-xs transition-all">
+      <button type="button" onclick="addToCart(${item.id})" class="bg-slate-100 active:scale-90 text-slate-900 font-extrabold px-3.5 py-2 rounded-xl text-xs transition-all border border-slate-200">
         + В корзину
       </button>
     </div>
@@ -253,20 +253,20 @@ function renderCart() {
     if (!prod) return '';
 
     return `
-      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
         <div class="flex justify-between items-center">
-          <span class="font-bold text-xs text-slate-800">${prod.name}</span>
+          <span class="font-bold text-xs text-slate-900">${prod.name}</span>
           <div class="flex items-center gap-2">
-            <button type="button" onclick="updateQuantity(${idx}, -1)" class="w-6 h-6 bg-white rounded-lg font-black text-xs shadow-sm">-</button>
-            <span class="text-xs font-bold">${it.quantity}</span>
-            <button type="button" onclick="updateQuantity(${idx}, 1)" class="w-6 h-6 bg-white rounded-lg font-black text-xs shadow-sm">+</button>
+            <button type="button" onclick="updateQuantity(${idx}, -1)" class="w-6 h-6 bg-white rounded-lg font-black text-xs shadow-sm border border-slate-200 text-slate-900">-</button>
+            <span class="text-xs font-bold text-slate-900">${it.quantity}</span>
+            <button type="button" onclick="updateQuantity(${idx}, 1)" class="w-6 h-6 bg-white rounded-lg font-black text-xs shadow-sm border border-slate-200 text-slate-900">+</button>
           </div>
         </div>
 
         ${addonsList.length > 0 ? `
-          <div class="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap gap-1.5">
+          <div class="mt-2 pt-2 border-t border-slate-200 flex flex-wrap gap-1.5">
             ${addonsList.map(ad => `
-              <button type="button" onclick="toggleAddon(${idx}, ${ad.id})" class="text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${it.addons.includes(ad.id) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200'}">
+              <button type="button" onclick="toggleAddon(${idx}, ${ad.id})" class="text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${it.addons.includes(ad.id) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-900 border-slate-200'}">
                 + ${ad.name} (${ad.price} ${CONFIG.currency})
               </button>
             `).join('')}
@@ -291,11 +291,10 @@ async function getNextOrderNumber() {
   return Math.max(...numbers) + 1;
 }
 
-// 10. ОФОРМЛЕНИЕ ЗАКАЗА С ПРОВЕРКОЙ ВРЕМЕНИ
+// 10. Оформление заказа
 async function submitOrder() {
   if (cart.length === 0) return;
 
-  // ЖЕСТКИЙ КОНТРОЛЬ ГРАФИКА
   const status = checkWorkingStatus();
   if (!status.isOpen) {
     alert(`⛔️ Внимание!\n${status.reason}`);
@@ -363,7 +362,7 @@ async function submitOrder() {
   }
 }
 
-// 11. Вспомогательный вывод состава
+// 11. Вывод состава блюд
 function buildOrderItemsHtml(items) {
   if (!items || !Array.isArray(items)) return '—';
 
@@ -377,12 +376,12 @@ function buildOrderItemsHtml(items) {
         const a = addonsList.find(x => x.id === aid);
         return a ? a.name : '';
       }).filter(Boolean).join(', ');
-      if (names) addonsStr = `<div class="text-[11px] text-amber-600 font-semibold pl-2">➕ ${names}</div>`;
+      if (names) addonsStr = `<div class="text-[11px] text-amber-800 font-semibold pl-2">➕ ${names}</div>`;
     }
 
     return `
       <div class="py-1">
-        <span class="font-bold text-slate-800">${prodName}</span> × ${it.quantity}
+        <span class="font-bold text-slate-900">${prodName}</span> × ${it.quantity}
         ${addonsStr}
       </div>
     `;
@@ -415,31 +414,31 @@ function renderClientOrders() {
   const container = document.getElementById('my-orders-list');
   if (myOrders.length === 0) {
     container.innerHTML = `
-      <div class="text-center py-16 text-slate-400">
+      <div class="text-center py-16 text-slate-500">
         <span class="text-4xl block mb-2">🌯</span>
         <p class="font-semibold text-sm">Сейчас у вас нет активных заказов</p>
-        <p class="text-xs text-slate-400 mt-1">Закажите что-нибудь вкусное во вкладке «Меню»!</p>
+        <p class="text-xs text-slate-500 mt-1">Закажите что-нибудь вкусное во вкладке «Меню»!</p>
       </div>
     `;
     return;
   }
 
   container.innerHTML = myOrders.map(o => {
-    let badge = '<span class="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold">⏳ Ожидает</span>';
-    if (o.status === 'preparing') badge = '<span class="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">🔥 Готовится</span>';
-    if (o.status === 'ready') badge = '<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold">✅ Готов к выдаче!</span>';
+    let badge = '<span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full text-xs font-bold">⏳ Ожидает</span>';
+    if (o.status === 'preparing') badge = '<span class="bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">🔥 Готовится</span>';
+    if (o.status === 'ready') badge = '<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full text-xs font-bold">✅ Готов к выдаче!</span>';
 
     return `
-      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-2">
-        <div class="flex justify-between items-center border-b pb-2">
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2">
           <span class="font-extrabold text-sm text-slate-900">Заказ #${o.order_number}</span>
           ${badge}
         </div>
-        <div class="text-xs text-slate-600 divide-y divide-slate-50">
+        <div class="text-xs text-slate-800 divide-y divide-slate-200">
           ${buildOrderItemsHtml(o.items)}
         </div>
-        <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-          <span class="text-xs text-slate-400 font-medium">${o.address ? '🛵 Доставка' : `🏃‍♂️ Через ${o.pickup_time} мин`}</span>
+        <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+          <span class="text-xs text-slate-500 font-medium">${o.address ? '🛵 Доставка' : `🏃‍♂️ Через ${o.pickup_time} мин`}</span>
           <span class="text-sm font-black text-slate-900">${o.total} ${CONFIG.currency}</span>
         </div>
       </div>
@@ -447,42 +446,42 @@ function renderClientOrders() {
   }).join('');
 }
 
-// 13. Кухня
+// 13. Экран кухни
 function renderKitchenOrders() {
   const container = document.getElementById('kitchen-orders-list');
   const active = allOrders.filter(o => o.status !== 'completed');
   document.getElementById('active-orders-count').innerText = `${active.length} активных`;
 
   if (active.length === 0) {
-    container.innerHTML = `<p class="text-center text-slate-400 py-10">Заказов на кухне нет</p>`;
+    container.innerHTML = `<p class="text-center text-slate-500 py-10">Заказов на кухне нет</p>`;
     return;
   }
 
   container.innerHTML = active.map(o => `
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-      <div class="flex justify-between items-center border-b pb-2">
+      <div class="flex justify-between items-center border-b border-slate-200 pb-2">
         <div>
           <span class="font-black text-base text-slate-900">Чек #${o.order_number}</span>
-          <span class="text-xs block text-slate-400 font-semibold">${new Date(o.created_at).toLocaleTimeString().slice(0, 5)}</span>
+          <span class="text-xs block text-slate-500 font-semibold">${new Date(o.created_at).toLocaleTimeString().slice(0, 5)}</span>
         </div>
-        <span class="text-xs font-black px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700">
+        <span class="text-xs font-black px-2.5 py-1 bg-slate-100 rounded-lg text-slate-900 border border-slate-200">
           ${o.address ? '🛵 ДОСТАВКА' : `🏃‍♂️ САМОВЫВОЗ (${o.pickup_time || 20} мин)`}
         </span>
       </div>
 
-      <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100 text-xs space-y-1">
-        ${o.phone ? `<div>📞 Тел: <a href="tel:${o.phone}" class="font-bold text-amber-900 underline">${o.phone}</a></div>` : ''}
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs space-y-1">
+        ${o.phone ? `<div>📞 Тел: <a href="tel:${o.phone}" class="font-bold text-slate-900 underline">${o.phone}</a></div>` : ''}
         ${o.address ? `<div class="font-semibold text-slate-800">📍 Адрес: <span class="font-bold text-slate-900">${o.address}</span></div>` : ''}
       </div>
 
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-800 divide-y divide-slate-200/60">
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-900 divide-y divide-slate-200">
         ${buildOrderItemsHtml(o.items)}
       </div>
 
       <div class="grid grid-cols-3 gap-1.5">
-        <button type="button" onclick="setOrderStatus(${o.id}, 'pending')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'pending' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}">⏳ Ждет</button>
-        <button type="button" onclick="setOrderStatus(${o.id}, 'preparing')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'preparing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200'}">🔥 Готовить</button>
-        <button type="button" onclick="setOrderStatus(${o.id}, 'ready')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'ready' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'}">✅ Готов</button>
+        <button type="button" onclick="setOrderStatus(${o.id}, 'pending')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'pending' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-100 text-slate-900 border-slate-200'}">⏳ Ждет</button>
+        <button type="button" onclick="setOrderStatus(${o.id}, 'preparing')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'preparing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-900 border-slate-200'}">🔥 Готовить</button>
+        <button type="button" onclick="setOrderStatus(${o.id}, 'ready')" class="py-2 text-xs font-bold rounded-xl border ${o.status === 'ready' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 text-slate-900 border-slate-200'}">✅ Готов</button>
       </div>
 
       <button type="button" onclick="setOrderStatus(${o.id}, 'completed')" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all">
@@ -514,7 +513,7 @@ function renderAdminStats() {
   document.getElementById('stat-count').innerText = todayOrders.length;
 
   document.getElementById('admin-recent-orders').innerHTML = todayOrders.slice(0, 5).map(o => `
-    <div class="flex justify-between py-1 border-b border-slate-50">
+    <div class="flex justify-between py-1 border-b border-slate-200">
       <span>#${o.order_number} (${o.status})</span>
       <span class="font-bold">${o.total} ${CONFIG.currency}</span>
     </div>
@@ -538,11 +537,11 @@ function switchTab(tab) {
     const el = document.getElementById(`tab-${t}`);
     const btn = document.getElementById(`nav-btn-${t}`);
     if (el) el.classList.add('hidden');
-    if (btn) btn.classList.replace('text-slate-900', 'text-slate-400');
+    if (btn) btn.classList.replace('text-slate-900', 'text-slate-500');
   });
 
   document.getElementById(`tab-${tab}`).classList.remove('hidden');
-  document.getElementById(`nav-btn-${tab}`).classList.replace('text-slate-400', 'text-slate-900');
+  document.getElementById(`nav-btn-${tab}`).classList.replace('text-slate-500', 'text-slate-900');
 }
 
 // Telegram

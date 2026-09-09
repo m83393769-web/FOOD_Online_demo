@@ -3,96 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <!-- ЖЕСТКИЙ ЗАПРЕТ ТЕМНОЙ ТЕМЫ (ЧТОБЫ НЕ ИНВЕРТИРОВАЛО ЦВЕТА) -->
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
+  
   <title>Food Delivery TMA</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Настройка цветов Tailwind под наш красивый сырный стиль -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            // Подменяем белый и сланцевый прямо в ядре стилей!
-            white: '#FFF6DC',      // Нежный расплавленный сыр сулугуни
+            white: '#FFF6DC',
             slate: {
-              50: '#FAF0CC',       // Маслянистые плашки инпутов
-              100: '#F3CA68',      // Яркий сыр Чеддер (кнопки добавления)
-              200: '#E2BF6F',      // Золотистые рамки лаваша
-              400: '#8A6E55',      // Теплый второстепенный текст
+              50: '#FAF0CC',
+              100: '#F3CA68',
+              200: '#E2BF6F',
+              400: '#8A6E55',
               500: '#6B4F38',
-              800: '#381E0D',      // Глубокий кофейный цвет текста
-              900: '#3B1B09',      // Цвет поджаренной корочки на гриле
+              800: '#381E0D',
+              900: '#3B1B09',
             }
           }
         }
       }
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="config.js?v=cheese"></script>
-  <script src="supabase.js?v=cheese"></script>
+  <script src="config.js?v=final1"></script>
+  <script src="supabase.js?v=final1"></script>
 
   <style>
+    :root {
+      color-scheme: light only;
+      supported-color-schemes: light;
+    }
     * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    
-    /* 🧀 НАСТОЯЩИЙ СЫРНЫЙ ЛАВАШ (Желтый, теплый, матовый) */
-    body {
-      background-color: #ffc53f !important; /* Цвет сочного сырного лаваша */
-      color: #381E0D !important;
-    }
-    
-    /* Карточки блюд: нежный расплавленный сыр сулугуни */
-    .bg-white, #cart-drawer, header, nav {
-      background-color: #a28429 !important;
-      border-color: #E2BF6F !important;
-      box-shadow: 0 4px 12px rgba(180, 115, 20, 0.08) !important;
-    }
-    
-    /* Поля ввода и мелкие плашки: маслянисто-сливочный цвет */
-    .bg-slate-50, input, select {
-      background-color: #FAF0CB !important;
-      border-color: #DDB45B !important;
-      color: #381E0D !important;
-    }
-    
-    /* Кнопки "+ В корзину" и табы: яркий плавленый Чеддер */
-    .bg-slate-100 {
-      background-color: #F3CA68 !important;
-      color: #421F00 !important;
-    }
-    
-    /* Главные кнопки оформления: цвет поджаристой корочки на гриле */
-    .bg-slate-900, #submit-order-btn {
-      background-color: #3B1B09 !important;
-      color: #FFECB3 !important;
-    }
-    
-    /* Все границы: золотисто-сырные */
-    .border-slate-100, .border-slate-200 {
-      border-color: #E2BF6F !important;
-    }
-
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body style="background-color: #F6E2B3 !important;" class="pb-24 antialiased selection:bg-none">
+<body style="background-color: #F6E2B3 !important; color: #381E0D !important;" class="pb-24 antialiased selection:bg-none">
 
-  <!-- Шапка в цвете топленого сыра -->
-  <header class="sticky top-0 z-30 bg-[#FFFDF9]/95 backdrop-blur-md border-b border-[#E8DCCB] px-4 py-3 shadow-sm flex items-center justify-between">
+  <!-- Шапка -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-2xl bg-amber-100/70 border border-amber-200 text-amber-800 flex items-center justify-center text-2xl shadow-inner" id="brand-logo">
+      <div class="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl" id="brand-logo">
         🥙
       </div>
       <div>
-        <h1 class="text-base font-black tracking-tight text-[#2D1A12] leading-tight" id="brand-name">ЗАВЕДЕНИЕ</h1>
-        <p class="text-xs text-[#8A7165] font-medium" id="brand-subtitle">Заказ еды</p>
+        <h1 class="text-base font-black tracking-tight text-slate-900 leading-tight" id="brand-name">ЗАВЕДЕНИЕ</h1>
+        <p class="text-xs text-slate-500 font-medium" id="brand-subtitle">Заказ еды</p>
       </div>
     </div>
     
     <div id="status-badge-container">
-      <span id="status-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+      <span id="status-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
         Проверка времени...
       </span>
     </div>
@@ -102,43 +74,39 @@
     
     <!-- 1. ВКЛАДКА: МЕНЮ -->
     <section id="tab-menu" class="space-y-4">
-      
-      <!-- Категории -->
       <div id="categories-bar" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
-
-      <!-- Список блюд -->
       <div id="menu-container" class="space-y-3">
-        <p class="text-center text-sm text-[#8A7165] py-10">Разогреваем печь...</p>
+        <p class="text-center text-sm text-slate-500 py-10">Загрузка меню...</p>
       </div>
 
       <!-- Корзина -->
-      <div id="cart-drawer" class="hidden bg-[#FFFDF9] border border-[#E8DCCB] rounded-3xl p-5 shadow-xl space-y-4 mt-6">
-        <div class="flex justify-between items-center border-b border-[#F0E4D3] pb-2">
-          <h3 class="font-extrabold text-base text-[#2D1A12]">🛒 Ваш заказ</h3>
+      <div id="cart-drawer" class="hidden bg-white border border-slate-200 rounded-3xl p-5 shadow-xl space-y-4 mt-6">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+          <h3 class="font-extrabold text-base text-slate-900">🛒 Ваш заказ</h3>
           <button type="button" onclick="clearCart()" class="text-xs text-rose-600 font-bold">Очистить</button>
         </div>
         
         <div id="cart-items" class="space-y-3"></div>
 
-        <div class="border-t border-[#F0E4D3] pt-3 space-y-3">
+        <div class="border-t border-slate-200 pt-3 space-y-3">
           <div id="order-type-selector">
-            <label class="block text-xs font-bold text-[#8A7165] mb-1.5 uppercase">Тип получения</label>
+            <label class="block text-xs font-bold text-slate-800 mb-1.5 uppercase">Тип получения</label>
             <div class="grid grid-cols-2 gap-2" id="order-type-buttons"></div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-[#8A7165] mb-1 uppercase">Телефон для связи</label>
-            <input type="tel" id="order-phone" placeholder="+375 / +7 (___) ___-__-__" class="w-full bg-[#FAF5EE] border border-[#E2D5C3] rounded-xl px-3 py-2.5 text-sm font-semibold text-[#2D1A12] focus:outline-none focus:border-amber-600">
+            <label class="block text-xs font-bold text-slate-800 mb-1 uppercase">Телефон для связи</label>
+            <input type="tel" id="order-phone" placeholder="+375 / +7 (___) ___-__-__" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 focus:outline-none focus:border-slate-900">
           </div>
 
           <div id="address-block" class="hidden">
-            <label class="block text-xs font-bold text-[#8A7165] mb-1 uppercase">Адрес доставки</label>
-            <input type="text" id="order-address" placeholder="Улица, дом, квартира / офис" class="w-full bg-[#FAF5EE] border border-[#E2D5C3] rounded-xl px-3 py-2.5 text-sm font-semibold text-[#2D1A12] focus:outline-none focus:border-amber-600">
+            <label class="block text-xs font-bold text-slate-800 mb-1 uppercase">Адрес доставки</label>
+            <input type="text" id="order-address" placeholder="Улица, дом, квартира / офис" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 focus:outline-none focus:border-slate-900">
           </div>
 
           <div id="pickup-time-block">
-            <label class="block text-xs font-bold text-[#8A7165] mb-1 uppercase">Когда заберете?</label>
-            <select id="order-time" class="w-full bg-[#FAF5EE] border border-[#E2D5C3] rounded-xl px-3 py-2.5 text-sm font-semibold text-[#2D1A12]">
+            <label class="block text-xs font-bold text-slate-800 mb-1 uppercase">Когда заберете?</label>
+            <select id="order-time" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900">
               <option value="15">Через 15 минут</option>
               <option value="20" selected>Через 20 минут</option>
               <option value="30">Через 30 минут</option>
@@ -147,19 +115,19 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-[#8A7165] mb-1 uppercase">Способ оплаты</label>
-            <select id="order-payment" class="w-full bg-[#FAF5EE] border border-[#E2D5C3] rounded-xl px-3 py-2.5 text-sm font-semibold text-[#2D1A12]">
+            <label class="block text-xs font-bold text-slate-800 mb-1 uppercase">Способ оплаты</label>
+            <select id="order-payment" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900">
               <option value="Наличные">Наличными при получении</option>
               <option value="Карта">Картой при получении</option>
             </select>
           </div>
 
           <div class="flex justify-between items-center pt-2">
-            <span class="text-sm font-bold text-[#8A7165]">К оплате:</span>
-            <span class="text-xl font-black text-[#2D1A12]" id="cart-total-price">0</span>
+            <span class="text-sm font-bold text-slate-800">К оплате:</span>
+            <span class="text-xl font-black text-slate-900" id="cart-total-price">0</span>
           </div>
 
-          <button type="button" id="submit-order-btn" onclick="submitOrder()" class="w-full bg-[#2E1A11] text-amber-100 font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition-transform hover:bg-[#3D2317]">
+          <button type="button" id="submit-order-btn" onclick="submitOrder()" class="w-full bg-slate-900 text-white font-black py-3.5 rounded-2xl shadow-lg active:scale-95 transition-transform">
             Оформить заказ
           </button>
         </div>
@@ -168,61 +136,61 @@
 
     <!-- 2. ВКЛАДКА: МОИ ЗАКАЗЫ -->
     <section id="tab-orders" class="hidden space-y-3">
-      <h2 class="text-lg font-black text-[#2D1A12] mb-3">Мои заказы</h2>
+      <h2 class="text-lg font-black text-slate-900 mb-3">Мои заказы</h2>
       <div id="my-orders-list" class="space-y-3"></div>
     </section>
 
     <!-- 3. ВКЛАДКА: КУХНЯ -->
     <section id="tab-kitchen" class="hidden space-y-4">
       <div class="flex justify-between items-center mb-2">
-        <h2 class="text-lg font-black text-[#2D1A12]">👨‍🍳 Экран кухни</h2>
-        <span class="text-xs bg-amber-200/80 text-amber-900 font-bold px-2 py-1 rounded-lg" id="active-orders-count">0 активных</span>
+        <h2 class="text-lg font-black text-slate-900">👨‍🍳 Экран кухни</h2>
+        <span class="text-xs bg-slate-100 text-slate-900 font-bold px-2 py-1 rounded-lg border border-slate-200" id="active-orders-count">0 активных</span>
       </div>
       <div id="kitchen-orders-list" class="space-y-3"></div>
     </section>
 
     <!-- 4. ВКЛАДКА: КАССА -->
     <section id="tab-admin" class="hidden space-y-4">
-      <h2 class="text-lg font-black text-[#2D1A12]">📊 Касса за сегодня</h2>
+      <h2 class="text-lg font-black text-slate-900">📊 Касса за сегодня</h2>
       <div class="grid grid-cols-2 gap-3">
-        <div class="bg-[#FFFDF9] p-4 rounded-2xl border border-[#E8DCCB] shadow-sm">
-          <p class="text-xs font-semibold text-[#8A7165]">Выручка сегодня</p>
-          <p class="text-2xl font-black text-amber-700 mt-1" id="stat-revenue">0</p>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-500">Выручка сегодня</p>
+          <p class="text-2xl font-black text-slate-900 mt-1" id="stat-revenue">0</p>
         </div>
-        <div class="bg-[#FFFDF9] p-4 rounded-2xl border border-[#E8DCCB] shadow-sm">
-          <p class="text-xs font-semibold text-[#8A7165]">Заказов сегодня</p>
-          <p class="text-2xl font-black text-[#2D1A12] mt-1" id="stat-count">0</p>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-semibold text-slate-500">Заказов сегодня</p>
+          <p class="text-2xl font-black text-slate-900 mt-1" id="stat-count">0</p>
         </div>
       </div>
 
-      <div class="bg-[#FFFDF9] rounded-2xl p-4 border border-[#E8DCCB] shadow-sm space-y-3">
-        <h3 class="font-bold text-sm text-[#2D1A12]">📋 Последние чеки</h3>
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <h3 class="font-bold text-sm text-slate-900">📋 Последние чеки</h3>
         <div id="admin-recent-orders" class="space-y-2 text-xs"></div>
       </div>
     </section>
 
   </main>
 
-  <!-- Навбар в уютных тонах -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#FFFDF9]/95 backdrop-blur-md border-t border-[#E8DCCB] px-4 py-2 flex justify-around items-center max-w-lg mx-auto">
-    <button type="button" onclick="switchTab('menu')" id="nav-btn-menu" class="flex flex-col items-center py-1 text-[#2D1A12] font-bold text-xs">
+  <!-- Навбар -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-around items-center max-w-lg mx-auto">
+    <button type="button" onclick="switchTab('menu')" id="nav-btn-menu" class="flex flex-col items-center py-1 text-slate-900 font-bold text-xs">
       <span class="text-xl">🥙</span>
       <span>Меню</span>
     </button>
-    <button type="button" onclick="switchTab('orders')" id="nav-btn-orders" class="flex flex-col items-center py-1 text-[#A89689] font-semibold text-xs">
+    <button type="button" onclick="switchTab('orders')" id="nav-btn-orders" class="flex flex-col items-center py-1 text-slate-500 font-semibold text-xs">
       <span class="text-xl">📦</span>
       <span>Заказы</span>
     </button>
-    <button type="button" onclick="switchTab('kitchen')" id="nav-btn-kitchen" class="hidden flex flex-col items-center py-1 text-amber-700 font-semibold text-xs">
+    <button type="button" onclick="switchTab('kitchen')" id="nav-btn-kitchen" class="hidden flex flex-col items-center py-1 text-slate-900 font-semibold text-xs">
       <span class="text-xl">👨‍🍳</span>
       <span>Кухня</span>
     </button>
-    <button type="button" onclick="switchTab('admin')" id="nav-btn-admin" class="hidden flex flex-col items-center py-1 text-[#6D4C41] font-semibold text-xs">
+    <button type="button" onclick="switchTab('admin')" id="nav-btn-admin" class="hidden flex flex-col items-center py-1 text-slate-900 font-semibold text-xs">
       <span class="text-xl">📊</span>
       <span>Касса</span>
     </button>
   </nav>
 
-  <script src="app.js?v=cheese"></script>
+  <script src="app.js?v=final1"></script>
 </body>
 </html>
